@@ -49,11 +49,7 @@ pipeline {
         withCredentials([usernamePassword(credentialsId: 'pg-user', usernameVariable: 'PGUSER', passwordVariable: 'PGPASSWORD')]) {
           sh '''
             . .venv/bin/activate
-            python scripts/dq_check.py \\
-              --host "${PGHOST:-postgres}" --port "${PGPORT:-5432}" \\
-              --db "${PGDATABASE:-appdb}" --user "$PGUSER" --password "$PGPASSWORD" \\
-              --schema mai --table "table" --columns col1 col2 col3 \\
-              --threshold 0.05 --outdir artifacts
+            python scripts/dq_check.py               --host "${PGHOST:-postgres}" --port "${PGPORT:-5432}"               --db "${PGDATABASE:-appdb}" --user "$PGUSER" --password "$PGPASSWORD"               --schema mai --table "table"               --null-columns col1 col2 event_dttm load_dttm event_date               --unique-keys col1 col2 event_date               --outdir artifacts
           '''
         }
       }
