@@ -3,16 +3,19 @@ def notifyTelegram(String message) {
   withCredentials([string(credentialsId: 'telegram-bot-token', variable: 'TG_TOKEN'),
                    string(credentialsId: 'telegram-chat-id',   variable: 'TG_CHAT')]) {
     if ((env.TG_TOKEN ?: '').trim() && (env.TG_CHAT ?: '').trim()) {
-      sh '''
-        set -e
-        curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \\
-          -d chat_id="${TG_CHAT}" --data-urlencode text="${message}" -d parse_mode=Markdown || true
-      '''
+      // двойные кавычки + экранированные $ для переменных shell
+      sh(script: """#!/bin/bash -e
+curl -s -X POST "https://api.telegram.org/bot\$TG_TOKEN/sendMessage" \
+  -d chat_id="\$TG_CHAT" \
+  --data-urlencode text="${message.replace('"','\\"')}" \
+  -d parse_mode=Markdown || true
+""")
     } else {
       echo "Telegram creds missing; skipping notification"
     }
   }
 }
+
 
 pipeline {
   agent any

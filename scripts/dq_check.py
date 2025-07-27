@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import argparse
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, timezone, date
 from pathlib import Path
 import psycopg2
 from psycopg2 import sql
@@ -60,7 +60,7 @@ def rule_unique(conn, schema, table, key_cols):
 def rule_freshness_dttm(conn, schema, table, dttm_cols, days=2):
     if not dttm_cols:
         return False, {'reason': 'no_dttm_columns'}
-    threshold = datetime.utcnow() - timedelta(days=days)
+    threshold = datetime.now(timezone.utc) - timedelta(days=days)
     max_ok = False
     max_values = {}
     with conn.cursor() as cur:
