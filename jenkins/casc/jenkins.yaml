@@ -1,0 +1,64 @@
+jenkins:
+  systemMessage: "Provisioned by JCasC for DQ pipeline"
+  numExecutors: 2
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_USER}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: true
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "pg-user"
+              username: "${PGUSER}"
+              password: "${PGPASSWORD}"
+              description: "Postgres app user"
+          - string:
+              scope: GLOBAL
+              id: "telegram-bot-token"
+              secret: "${TELEGRAM_BOT_TOKEN}"
+              description: "Telegram bot token (optional)"
+          - string:
+              scope: GLOBAL
+              id: "telegram-chat-id"
+              secret: "${TELEGRAM_CHAT_ID}"
+              description: "Telegram Chat ID (optional)"
+
+jobs:
+  - script: |
+      pipelineJob('dq-pipeline') {
+        description('CI pipeline for Data Quality checks (NULL counts on mai."table").')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url("${REPO_URL}")
+                }
+                branches('*/main')
+              }
+            }
+            scriptPath('Jenkinsfile')
+          }
+        }
+        triggers {
+          scm('H/15 * * * *')     // poll SCM fallback
+          cron('H 2 * * *')       // nightly at ~02:00
+          githubPush()            // webhook if configured
+        }
+        properties {
+          githubProjectUrl("${REPO_URL}")
+        }
+      }
