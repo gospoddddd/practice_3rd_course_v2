@@ -6,3 +6,6 @@ credentials
 htmlpublisher
 github
 antisamy-markup-formatter
+ansicolor
+timestamper
+pipeline-model-definition
