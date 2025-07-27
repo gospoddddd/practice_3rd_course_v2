@@ -27,12 +27,16 @@ def break_freshness(conn_args):
 
 def insert_nulls(conn_args, n=3):
     with psycopg2.connect(**conn_args) as conn, conn.cursor() as cur:
+        # Временно позволим NULL
+        cur.execute('ALTER TABLE "mai"."table" ALTER COLUMN col2 DROP NOT NULL;')
         now = datetime.utcnow() - timedelta(days=5)
         for i in range(n):
-            cur.execute(f'INSERT INTO {TABLE}(col1, col2, event_dttm, load_dttm, event_date) VALUES (%s,%s,%s,%s,%s)',
-                        (99999+i, None, now, now, date.today() - timedelta(days=40)))
+            cur.execute(
+                'INSERT INTO "mai"."table"(col1, col2, event_dttm, load_dttm, event_date) VALUES (%s,%s,%s,%s,%s)',
+                (99999+i, None, now, now, date.today() - timedelta(days=40))
+            )
         conn.commit()
-    print(f"Inserted {n} rows with NULLs in col2 (NOT NULL check should FAIL).")
+
 
 def main():
     ap = argparse.ArgumentParser()

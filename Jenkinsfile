@@ -19,6 +19,13 @@ curl -s -X POST "https://api.telegram.org/bot\$TG_TOKEN/sendMessage" \
 
 pipeline {
   agent any
+  
+  parameters {
+    booleanParam(name: 'RESET_DB', defaultValue: false,
+      description: 'Пересоздать демо-данные (init_db.py) перед проверкой')
+    choice(name: 'MUTATION', choices: ['none','make_duplicates','break_freshness','insert_nulls'],
+      description: 'Применить мутацию данных перед проверкой')
+  }
   stages {
     stage('Checkout') {
       steps {
@@ -36,13 +43,29 @@ pipeline {
       }
     }
     stage('Init DB (demo)') {
+      when { expression { params.RESET_DB } }   // <--- ВАЖНО
       steps {
         withCredentials([usernamePassword(credentialsId: 'pg-user', usernameVariable: 'PGUSER', passwordVariable: 'PGPASSWORD')]) {
           sh '''
             . .venv/bin/activate
-            python scripts/init_db.py \\
-              --host "${PGHOST:-postgres}" --port "${PGPORT:-5432}" \\
+            python scripts/init_db.py \
+              --host "${PGHOST:-postgres}" --port "${PGPORT:-5432}" \
               --db "${PGDATABASE:-appdb}" --user "$PGUSER" --password "$PGPASSWORD"
+          '''
+        }
+      }
+    }
+
+    stage('Apply Mutation (optional)') {
+      when { expression { params.MUTATION != 'none' } }   // <--- ВАЖНО
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'pg-user', usernameVariable: 'PGUSER', passwordVariable: 'PGPASSWORD')]) {
+          sh '''
+            . .venv/bin/activate
+            python scripts/mutations.py \
+              --host "${PGHOST:-postgres}" --port "${PGPORT:-5432}" \
+              --db "${PGDATABASE:-appdb}" --user "$PGUSER" --password "$PGPASSWORD" \
+              --action ${MUTATION}
           '''
         }
       }
